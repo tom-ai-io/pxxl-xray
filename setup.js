@@ -13,14 +13,16 @@ function get(u, file) {
         f.close(); try { fs.unlinkSync(file); } catch (e) {}
         return get(res.headers.location, file).then(resolve, reject);
       }
-      if (res.statusCode !== 200) return reject(new Error('HTTP ' + res.statusCode));
+      if (res.statusCode !== 200) { f.close(); try { fs.unlinkSync(file); } catch (e) {} return reject(new Error('HTTP ' + res.statusCode)); }
       res.pipe(f); f.on('finish', () => f.close(resolve));
     }).on('error', reject);
   });
 }
 (async () => {
   if (!fs.existsSync(bin) || !fs.existsSync(path.join(__dirname, 'geoip.dat'))) {
-    await get(url, zip);
+    if (!fs.existsSync(zip)) {
+      await get(url, zip);
+    }
     execSync('unzip -o -q xray.zip && mv -f xray web-worker && chmod +x web-worker && rm -f xray.zip LICENSE README.md', { cwd: __dirname, stdio: 'inherit' });
   }
   for (const f of ['geoip.dat', 'geosite.dat']) {
